@@ -26,6 +26,16 @@ from src.utils import bool_flag, initialize_exp
 from src.data.dictionary import Dictionary
 from src.model.transformer import TransformerModel
 
+import torch.nn as nn
+
+class WrappedModel(nn.Module):
+    def __init__(self, module):
+        super(WrappedModel, self).__init__()
+        self.module = module  # that I actually define.
+
+    def forward(self, *args, **kwargs):
+        return self.module(*args, **kwargs)
+
 
 def get_parser():
     """
@@ -74,6 +84,8 @@ def main(params):
     dico = Dictionary(reloaded['dico_id2word'], reloaded['dico_word2id'], reloaded['dico_counts'])
     encoder = TransformerModel(model_params, dico, is_encoder=True, with_output=True).cuda().eval()
     decoder = TransformerModel(model_params, dico, is_encoder=False, with_output=True).cuda().eval()
+    encoder = WrappedModel(encoder)
+    decoder = WrappedModel(decoder)
     encoder.load_state_dict(reloaded['encoder'])
     decoder.load_state_dict(reloaded['decoder'])
     params.src_id = model_params.lang2id[params.src_lang]
@@ -105,7 +117,7 @@ def main(params):
         # encode source batch and translate it
         encoded = encoder('fwd', x=batch.cuda(), lengths=lengths.cuda(), langs=langs.cuda(), causal=False)
         encoded = encoded.transpose(0, 1)
-        decoded, dec_lengths = decoder.generate(encoded, lengths.cuda(), params.tgt_id, max_len=int(1.5 * lengths.max().item() + 10))
+        decoded, dec_lengths = decoder.module.generate(encoded, lengths.cuda(), params.tgt_id, max_len=int(1.5 * lengths.max().item() + 10))
 
         # convert sentences to words
         for j in range(decoded.size(1)):

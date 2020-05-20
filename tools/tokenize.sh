@@ -31,6 +31,8 @@ elif [ "$lg" = "th" ]; then
 # Japanese
 elif [ "$lg" = "ja" ]; then
   cat - | $REPLACE_UNICODE_PUNCT | $NORM_PUNC -l $lg | $REM_NON_PRINT_CHAR | kytea -notags
+elif [ "$lg" = "ko" ]; then
+  cat - | $REPLACE_UNICODE_PUNCT | $NORM_PUNC -l $lg | $REM_NON_PRINT_CHAR | python $TOOLS_PATH/segment_ko.py
 # other languages
 else
   cat - | $REPLACE_UNICODE_PUNCT | $NORM_PUNC -l $lg | $REM_NON_PRINT_CHAR | $TOKENIZER -no-escape -threads $N_THREADS -l $lg
